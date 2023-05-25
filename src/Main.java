@@ -5,8 +5,10 @@ public class Main {
     private static List<BatimentEntreposage> batiments = new LinkedList<>();
     private static int capaciteMaxCamion;
     private static int nombreTotalBoites;
-    private static int boitesChargees;
+    private static int boitesAChargees;
     private static double distance;
+    private static double camionLatitude;
+    private static double camionLongitude;
 
     public static void main(String[] args) {
         //gestion des arguments
@@ -71,8 +73,8 @@ public class Main {
             }
 
             if (!batiments.isEmpty()) {
-                double camionLatitude = batimentPlusGrandNombreBoites.getLatitude();
-                double camionLongitude = batimentPlusGrandNombreBoites.getLongitude();
+                camionLatitude = batimentPlusGrandNombreBoites.getLatitude();
+                camionLongitude = batimentPlusGrandNombreBoites.getLongitude();
 
                 //X
                 System.out.println("Longitude : " + camionLatitude);
@@ -86,17 +88,19 @@ public class Main {
                     writer.write("Truck position: " + camionLatitude + "," + camionLongitude);
                     writer.newLine();
                     //iterateur
-                    Iterator<BatimentEntreposage> it = batiments.iterator();
+                    Iterator<BatimentEntreposage> batimentIterator = batiments.iterator();
 
                     // Boucle de chargement des boîtes dans le camion
-                    boitesChargees = 0;
-                    while (boitesChargees < capaciteMaxCamion && nombreTotalBoites > 0 ) {
+                    int boitesRestantes= 0;
+                    int boitesdjachargees=0;
+                    boitesAChargees = 0;
+                    while (boitesAChargees < capaciteMaxCamion && nombreTotalBoites > 0 && batimentIterator.hasNext()) {
                         // Affichage des bâtiments proches et des boîtes restantes
                         BatimentEntreposage batimentProche = rechercherBatimentProche(camionLatitude,
                                 camionLongitude, position, batiments);
-                        //double distance = calculerDistance(camionLatitude, camionLongitude,
-                        //          batimentProche.getLatitude(), batimentProche.getLongitude());
-                        int boitesRestantes = batimentProche.getNombreBoitesDisponibles();
+
+                        // int boitesRestantes = batimentProche.getNombreBoitesDisponibles();
+                        //imprime et ecris la position du camion dans le fichier
                         System.out.println("Distance: " + distance + " Number of boxes: " +
                                 boitesRestantes + " Position: " + batimentProche.getLatitude() + ","
                                 + batimentProche.getLongitude());
@@ -105,20 +109,26 @@ public class Main {
                                 + "\tPosition: " + batimentProche.getLatitude() + "," + batimentProche.getLongitude());
                         writer.newLine();
 
-                        // Chargement des boîtes dans le camion
-                        int boitesdjacharger = (int) Math.min(capaciteMaxCamion - boitesChargees, boitesRestantes);
-                        //incremente le boite a chag
-                        boitesChargees += boitesdjacharger;
-                        System.out.println(boitesChargees);
-                        //decremente le nombre de total de boite
-                        nombreTotalBoites -= boitesdjacharger;
-                        //  batimentProche.setNombreBoitesDisponibles(boitesRestantes - boitesdjacharger);
-                        //supprimer l'entrepot dans la base de donnee
-                        if (position >= 0 && position < batiments.size()) {
-                            batiments.remove(position);
-                        } else {
-                            // La position est invalide, gérer l'erreur ou afficher un message approprié
+                        boitesRestantes = capaciteMaxCamion - boitesdjachargees;
+                        if (boitesRestantes != 0){
                             break;
+                        }else{
+                            // Chargement des boîtes dans le camion
+                            //int boitesdjacharger = (int) Math.min(capaciteMaxCamion - boitesChargees, boitesRestantes);
+                            //incremente le boite a charger
+                            boitesdjachargees += 0;
+                            boitesAChargees = batimentProche.getNombreBoitesDisponibles();
+                            System.out.println(boitesAChargees);
+                            //decremente le nombre de total de boite
+                            nombreTotalBoites -= boitesdjachargees;
+                            //  batimentProche.setNombreBoitesDisponibles(boitesRestantes - boitesdjacharger);
+                            //supprimer l'entrepot dans la base de donnee
+                            if (position >= 0 && position < batiments.size()) {
+                                batiments.remove(position);
+                            } else {
+                                // La position est invalide, gérer l'erreur ou afficher un message approprié
+                                break;
+                            }
                         }
                     }
                 } catch (IOException e) {
@@ -126,7 +136,7 @@ public class Main {
                 }
                 // System.out.println(nombreTotalBoites);
 
-                System.out.println("Total boxes loaded: " + boitesChargees);
+                System.out.println("Total boxes loaded: " + "boitesChargees");
             } else {
                 System.out.println("Aucun Batiment d'entreposage trouvé");
             }
@@ -209,6 +219,8 @@ public class Main {
                 double distanceEnDessous = calculerDistance(elementInitial.getLatitude(), elementInitial.getLongitude(),
                         elementEnDessous1.getLatitude(), elementEnDessous1.getLongitude());
                 distance = distanceEnDessous;
+                camionLatitude = elementEnDessous1.getLatitude();
+                camionLongitude = elementEnDessous1.getLongitude();
                 return elementEnDessous1;
             }
 
@@ -227,17 +239,25 @@ public class Main {
             //comparaison de ces deux distances        
             if (distanceAuDessus > distanceEnDessous) {
                 distance = distanceAuDessus;
+                camionLatitude = elementAuDessus.getLatitude();
+                camionLongitude = elementAuDessus.getLongitude();
                 return elementAuDessus;
             } else if (distanceEnDessous > distanceAuDessus) {
                 distance = distanceEnDessous;
+                camionLatitude = elementEnDessous.getLatitude();
+                camionLongitude = elementEnDessous.getLongitude();
                 return elementEnDessous;
             } else {
                 // si Les distances sont identiques, retourne celui avec la latitude la plus petite
                 if (elementAuDessus.getLatitude() < elementEnDessous.getLatitude()) {
                     distance = distanceAuDessus;
+                    camionLatitude = elementAuDessus.getLatitude();
+                    camionLongitude = elementAuDessus.getLongitude();
                     return elementAuDessus;
                 } else {
                     distance = distanceEnDessous;
+                    camionLatitude = elementEnDessous.getLatitude();
+                    camionLongitude = elementEnDessous.getLongitude();
                     return elementEnDessous;
                 }
             }
