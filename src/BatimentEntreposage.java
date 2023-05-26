@@ -5,6 +5,7 @@ public class BatimentEntreposage {
     private int nombreBoitesDisponibles;
     private double latitude;
     private double longitude;
+    private double distanceBatiments;
     public static final BatimentEntreposage VALEUR_ABSENTE = new BatimentEntreposage(0, 0.0, 0.0);
 
     public BatimentEntreposage(int nombreBoitesDisponibles, double latitude, double longitude) {
@@ -27,6 +28,13 @@ public class BatimentEntreposage {
 
     public double getLongitude() {
         return longitude;
+    }
+    public double getDistanceBatiments() {
+        return distanceBatiments;
+    }
+
+    public void setDistanceBatiments(double distanceBatiments) {
+        this.distanceBatiments = distanceBatiments;
     }
 }
 

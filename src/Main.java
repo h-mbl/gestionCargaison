@@ -9,6 +9,7 @@ public class Main {
     private static double distance;
     private static double camionLatitude;
     private static double camionLongitude;
+    private static int position;
 
     public static void main(String[] args) {
         //gestion des arguments
@@ -32,7 +33,8 @@ public class Main {
             //Si deux bâtiments ont la même longitude, ce deuxième critère de tri sera utilisé.
             // Il compare les latitudes des bâtiments. Les bâtiments seront ensuite triés par ordre croissant de leur latitude.
             Comparator<BatimentEntreposage> comparator = Comparator
-                    .comparingDouble(BatimentEntreposage::getLongitude)
+                    .comparingInt(BatimentEntreposage::getNombreBoitesDisponibles)
+                    .thenComparingDouble(BatimentEntreposage::getLongitude)
                     .thenComparingDouble(BatimentEntreposage::getLatitude);
 
             //sort :(
@@ -60,7 +62,7 @@ public class Main {
             }
             BatimentEntreposage batimentPlusGrandNombreBoites = null;
             int nombreBoitesTemp = 0;
-            int position = -1;
+            //int position = -1;
             for (int i = 0; i < fileBatiments.size(); i++) {
                 BatimentEntreposage batiments = ((LinkedList<BatimentEntreposage>) fileBatiments).get(i);
                 //vérifie si le nombre de boîtes disponibles pour le bâtiment actuel  est supérieur à la valeur maximale (nombreBoitesTemp)
@@ -123,8 +125,9 @@ public class Main {
                             nombreTotalBoites -= boitesdjachargees;
                             //  batimentProche.setNombreBoitesDisponibles(boitesRestantes - boitesdjacharger);
                             //supprimer l'entrepot dans la base de donnee
-                            if (position >= 0 && position < batiments.size()) {
-                                batiments.remove(position);
+                            if (position > 0 && position < batiments.size()) {
+                                continue;
+                               // batiments.remove(position);
                             } else {
                                 // La position est invalide, gérer l'erreur ou afficher un message approprié
                                 break;
@@ -221,6 +224,7 @@ public class Main {
                 distance = distanceEnDessous;
                 camionLatitude = elementEnDessous1.getLatitude();
                 camionLongitude = elementEnDessous1.getLongitude();
+                position += 1;
                 return elementEnDessous1;
             }
 
@@ -241,11 +245,13 @@ public class Main {
                 distance = distanceAuDessus;
                 camionLatitude = elementAuDessus.getLatitude();
                 camionLongitude = elementAuDessus.getLongitude();
+                position -= 1;
                 return elementAuDessus;
             } else if (distanceEnDessous > distanceAuDessus) {
                 distance = distanceEnDessous;
                 camionLatitude = elementEnDessous.getLatitude();
                 camionLongitude = elementEnDessous.getLongitude();
+                position += 1;
                 return elementEnDessous;
             } else {
                 // si Les distances sont identiques, retourne celui avec la latitude la plus petite
@@ -253,11 +259,13 @@ public class Main {
                     distance = distanceAuDessus;
                     camionLatitude = elementAuDessus.getLatitude();
                     camionLongitude = elementAuDessus.getLongitude();
+                    position -= 1;
                     return elementAuDessus;
                 } else {
                     distance = distanceEnDessous;
                     camionLatitude = elementEnDessous.getLatitude();
                     camionLongitude = elementEnDessous.getLongitude();
+                    position += 1;
                     return elementEnDessous;
                 }
             }
