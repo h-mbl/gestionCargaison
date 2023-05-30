@@ -1,1 +1,1 @@
-Distance: -0.0062040000000109785	Number of boxes: 7	Position: 45.515399,-73.561996
+Distance: 21193.6781415218	Number of boxes: 2	Position: 45.5092,-73.5682

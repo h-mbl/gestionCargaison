@@ -2,9 +2,15 @@ import java.io.*;
 import java.util.*;
 
 public class GestionCargaison {
-
     private static List<BatimentEntreposage> batiments = new LinkedList<>();
     private static int capaciteMaxCamion;
+    private static int position;
+    private static int boitesRestantes=0;
+    private static int NombreBoiteDansCamion;
+    private static Comparator<BatimentEntreposage> comparator = Comparator
+            .comparingDouble(BatimentEntreposage::getDistanceBatiments)
+            .thenComparingDouble(BatimentEntreposage::getLongitude)
+            .thenComparingDouble(BatimentEntreposage::getLatitude);
     public static void main(String[] args) {
         try {
             //pour lire les fichiers en args
@@ -13,47 +19,57 @@ public class GestionCargaison {
             triSelonNbreBoite();
             //initialise la position du camion (longitude et latitude)
             camion camion = new camion(capaciteMaxCamion,batiments.get(0).getLongitude(),batiments.get(0).getLatitude());
-            System.out.println("Truck position: " + camion.getLongitude() + "," + camion.getLatitude());
+            System.out.println("Truck position: " + camion.getLatitude() + "," + camion.getLongitude() );
+            //ecris la position du camion
             try (BufferedWriter writer = new BufferedWriter(new FileWriter("src/fichier2.txt"))) {
                 writer.write("Truck position: " + camion.getLongitude() + "," + camion.getLatitude());
             }
-            for (int i = 0; i < batiments.size();) {
-                int boitesRestantes = 0;
-                if (boitesRestantes == 0 && !batiments.isEmpty()) {
-                    new camion(capaciteMaxCamion, batiments.get(i).getLongitude(), batiments.get(i).getLatitude());
-                    //
-                    //
-                    for (int j = 0; j < batiments.size(); j++) {
-                        int dernieredistance = 0;
-                        double distance = batiments.get(i).getLongitude() - batiments.get(j).getLongitude();
+            //set les distances des entrepots par rapport a la distance du camion
+            for (int j = 1; j < batiments.size()-1; j++) {
+                batiments.get(j).setDistanceBatiments( calculerDistance(camion.getLatitude(), camion.getLongitude(),
+                        batiments.get(j).getLatitude(), batiments.get(j).getLongitude()));
+                System.out.println(batiments.get(j).getDistanceBatiments());
+                System.out.println("-----DISTANCE-----");
 
-                        if (distance == dernieredistance) {
-                            double distanceSecond = batiments.get(i).getLatitude() - batiments.get(j).getLatitude();
-                            batiments.get(j).setDistanceBatiments(distanceSecond);
-                        } else {
-                            batiments.get(j).setDistanceBatiments(distance);
-                        }
+            }
+            //tri les elements a partir de l'element 2 de la liste jusqu'a la fin.
+            //pour trouver la liste croissante des batiments proches du camions
+            triQuicksort(batiments,comparator,1, batiments.size()-1);
+          /*  for (BatimentEntreposage batiment : batiments) {
+                System.out.println("Nom: " + batiment.getNombreBoitesDisponibles());
+                System.out.println("Longitude: " + batiment.getLongitude());
+                System.out.println("Latitude: " + batiment.getLatitude());
+                System.out.println("Distance: " + batiment.getDistanceBatiments());
+                // Ajoutez d'autres attributs selon les besoins
+                System.out.println("--------------------");
+            }*/
+
+            for (int i = 0; i < batiments.size();i++) {
+                if (boitesRestantes == 0 && !batiments.isEmpty()) {
+                    //condition pour verifier l'espace disponible dans camion >= nombre de boite à chargée
+                    if(NombreBoiteDansCamion+batiments.get(i).getNombreBoitesDisponibles()
+                            <= camion.getCapaciteMaxCamion()){
+                        NombreBoiteDansCamion = camion.getNombreBoiteDansCamion() + batiments.get(i).getNombreBoitesDisponibles();
+                        boitesRestantes=0;
                     }
-                    boitesRestantes = camion.getNombreBoiteDansCamion() - batiments.get(i).getNombreBoitesDisponibles();
-                    int NombreBoiteDansCamion = camion.getNombreBoiteDansCamion() + batiments.get(i).getNombreBoitesDisponibles();
+                    else{
+                        //nombre de boite restante
+                        boitesRestantes= NombreBoiteDansCamion+batiments.get(i).getNombreBoitesDisponibles()-camion.getCapaciteMaxCamion();
+                        //nombre de boite que l'on peut charger dans camion
+                        NombreBoiteDansCamion= camion.getCapaciteMaxCamion();
+
+                    }
+
+                    //set le nombre de boite deja dans le camion
                     camion.setNombreBoiteDansCamion(NombreBoiteDansCamion);
-                    batiments.remove(i);
-                    triSimple();
                     //imprime et ecris la position du camion dans le fichier
-                    if (!batiments.isEmpty()) {
-                        System.out.println("Distance: " + batiments.get(i).getDistanceBatiments() + " Number of boxes: " +
-                                boitesRestantes + " Position: " + batiments.get(i).getLatitude() + ","
+                    System.out.println("Distance: " + batiments.get(i).getDistanceBatiments() + " Number of boxes: " +
+                            boitesRestantes + " Position: " + batiments.get(i).getLatitude() + ","
                                 + batiments.get(i).getLongitude());
-                        try (BufferedWriter writer = new BufferedWriter(new FileWriter("src/fichier2.txt"))) {
+                    try (BufferedWriter writer = new BufferedWriter(new FileWriter("src/fichier2.txt"))) {
                             writer.write("Distance: " + batiments.get(i).getDistanceBatiments() + "\tNumber of boxes: " + boitesRestantes
                                     + "\tPosition: " + batiments.get(i).getLatitude() + "," + batiments.get(i).getLongitude());
                             writer.newLine();
-                        }
-                        //
-                        //
-                        i = 0;
-                    }else{
-                        break;
                     }
 
                 }else{
@@ -65,60 +81,93 @@ public class GestionCargaison {
         }
 
     }
-
-    //les 2 methodes sont presque pareille : (
-
     private static void triSelonNbreBoite() {
-        // Il compare les latitudes des bâtiments. Les bâtiments seront ensuite triés par ordre croissant de leur latitude.
-        Comparator<BatimentEntreposage> comparator = Comparator
-                //puis-je utiliser reversed()
-                .comparingInt(BatimentEntreposage::getNombreBoitesDisponibles).reversed()
-                .thenComparingDouble(BatimentEntreposage::getLongitude)
-                .thenComparingDouble(BatimentEntreposage::getLatitude);
+        //recherche la position du batiment ayant plus de boite
 
-        triSort(comparator);
-
-
-    }
-    private static void triSimple() {
-        // Il compare les latitudes des bâtiments. Les bâtiments seront ensuite triés par ordre croissant de leur latitude.
-        Comparator<BatimentEntreposage> comparator = Comparator
-                .comparingDouble(BatimentEntreposage::getDistanceBatiments).reversed()
-                .thenComparingDouble(BatimentEntreposage::getLongitude)
-                .thenComparingDouble(BatimentEntreposage::getLatitude);
-
-        triSort(comparator);
-
-
-    }
-    public static void triSort( Comparator<BatimentEntreposage> comparator){
-        for (int i = 1; i < batiments.size(); i++) {
-            BatimentEntreposage current = batiments.get(i);
-            int j = i - 1;
-
-            while (j >= 0 && comparator.compare(batiments.get(j), current) > 0) {
-                batiments.set(j + 1, batiments.get(j));
-                j--;
+        int tempElement=batiments.get(0).getNombreBoitesDisponibles();
+        position=0;
+        //cherche lùele,ent le plus grqnd de la liste en le sauvegardant dans une variable temporaire
+        for (int i = 0; i < batiments.size(); i++) {
+                if (batiments.get(position).getNombreBoitesDisponibles() < batiments.get(i).getNombreBoitesDisponibles()) {
+                    tempElement=batiments.get(i).getNombreBoitesDisponibles();
+                    position=i;
+                  //si les batiments ont le meme nombre de boite
+                } else if (batiments.get(position).getNombreBoitesDisponibles() == batiments.get(i).getNombreBoitesDisponibles()) {
+                    //recupere la position ayant la latitude la plus basse
+                    if (batiments.get(position).getLatitude()  < batiments.get(i).getLatitude() ){
+                        tempElement=batiments.get(position).getNombreBoitesDisponibles();
+                    }
+                    //si le batiment ont la meme latitude prendre le batiment avec la longitude la plus basse
+                    else if (batiments.get(position).getLatitude() == batiments.get(i).getLatitude()){
+                        if (batiments.get(position).getLongitude()< batiments.get(i).getLongitude()){
+                            tempElement=batiments.get(position).getNombreBoitesDisponibles();
+                        }
+                        else{
+                            tempElement=batiments.get(i).getNombreBoitesDisponibles();
+                            position=i;
+                        }
+                    }
+                } else {
+                    tempElement=batiments.get(position).getNombreBoitesDisponibles();
+                }
             }
-            batiments.set(j + 1, current);
+
+
+        //echanger les elements de la liste pour mettre l'element avec le plus grand nombre de boite au debut de la liste
+        echanger(batiments,position, 0);
         }
+
+
+   public static void triQuicksort(List<BatimentEntreposage> batiments, Comparator<BatimentEntreposage> comparator, int debut, int fin) {
+       if (debut < fin) {
+           int pivotIndex = partitionner(batiments, comparator, debut, fin);
+           triQuicksort(batiments, comparator, debut, pivotIndex - 1);
+           triQuicksort(batiments, comparator, pivotIndex + 1, fin);
+       }
+   }
+
+    public static int partitionner(List<BatimentEntreposage> batiments, Comparator<BatimentEntreposage> comparator, int debut, int fin) {
+        BatimentEntreposage pivot = batiments.get(fin);
+        int i = debut - 1;
+
+        for (int j = debut; j < fin; j++) {
+            if (comparator.compare(batiments.get(j), pivot) <= 0) {
+                i++;
+                echanger(batiments, i, j);
+            }
+        }
+
+        echanger(batiments, i + 1, fin);
+        return i + 1;
     }
-    //a revoir
+    //echange les elements de la liste
+    public static void echanger(List<BatimentEntreposage> batiments, int i, int j) {
+        BatimentEntreposage temp = batiments.get(i);
+        batiments.set(i, batiments.get(j));
+        batiments.set(j, temp);
+    }
+    //calcule la distance grace a la formule d'Harvesine
     public static double calculerDistance(double lat1, double lon1, double lat2, double lon2) {
         final int R = 6371000;
-        double latDistance = Math.toRadians(lat2 - lat1);
-        double lonDistance = Math.toRadians(lon2 - lon1);
-        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
-                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-        return R * c;
+        lat1 = Math.toRadians(lat1);
+        lon1 = Math.toRadians(lon1);
+        lat2 = Math.toRadians(lat2);
+        lon2 = Math.toRadians(lon2);
+
+        double distanceLat = lat2 - lat1;
+        double distanceLon = lon2 - lon1;
+        double a = Math.sin(distanceLat / 2) * Math.sin(distanceLat / 2) +
+                Math.cos(lat1) * Math.cos(lat2) * Math.sin(distanceLon / 2) * Math.sin(distanceLon / 2);
+        double c = 2 * Math.asin(Math.sqrt(a));
+
+        double distance = R * c;
+
+        return distance;
     }
 
 
     //la methode qui lit le fichier en Args
-    //a revoir
     private static void readFilesArgs(String fichierEntree) throws IOException {
 
         try (BufferedReader reader = new BufferedReader(new FileReader(fichierEntree))) {

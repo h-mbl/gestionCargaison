@@ -33,4 +33,5 @@ public class camion {
         this.longitude=longitude;
     }
     public int getEspaceDisponibleCamion(){return espaceDisponibleCamion;}
+    public int getCapaciteMaxCamion(){return capaciteMaxCamion;}
 }
